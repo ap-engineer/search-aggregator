@@ -1,0 +1,7 @@
+﻿services:
+  searchaggregator.api:
+    image: searchaggregator.api
+    build:
+      context: .
+      dockerfile: Dockerfile
+
