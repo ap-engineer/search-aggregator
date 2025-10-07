@@ -1,10 +1,10 @@
 # Search Aggregator API
 
-A .NET 9 web API that aggregates search results from multiple search engines (Google, Bing, and DuckDuckGo) and returns the total number of hits for each search term.
+A .NET 9 web API that aggregates search results from multiple search engines (Google, Wikipedia, and could others) and returns the total number of hits for each search term.
 
 ## Features
 
-- **Multi-Engine Search**: Searches across Google, Bing, and DuckDuckGo
+- **Multi-Engine Search**: Searches across Google and Wiki
 - **Word-by-Word Analysis**: Splits queries into individual words and searches each separately
 - **Result Aggregation**: Sums up hit counts for each word per search engine
 - **Swagger Documentation**: Interactive API documentation available at the root URL
@@ -22,14 +22,14 @@ Searches across multiple search engines and returns aggregated hit counts.
 
 **Example Request:**
 ```
-GET /api/search?query=Hello world
+GET /api/search?query=Hello
 ```
 
 **Example Response:**
 ```json
 {
   "query": "Hello world",
-  "searchTerms": ["Hello", "world"],
+  "totalHits": 22222222,
   "searchEngines": [
     {
       "name": "Google",
@@ -75,7 +75,8 @@ For example, if you search for "Hello world":
 
 ### Prerequisites
 - .NET 9 SDK
-- Or Docker (for containerized deployment)
+- Node.js /w npm
+- Or ~~Docker~~ (for containerized deployment)
 
 ### Using .NET CLI
 ```bash
@@ -84,89 +85,9 @@ dotnet restore
 dotnet run
 ```
 
-### Using Docker
-```bash
-cd src/Server/SearchAggregator.Api
-docker build -t search-aggregator .
-docker run -p 8080:8080 search-aggregator
-```
-
-### Using Docker Compose
-```bash
-cd src/Server/SearchAggregator.Api
-docker-compose up
-```
-
 ## Accessing the API
 
 Once running, you can access:
-- **Swagger UI**: `http://localhost:5000` (or `http://localhost:8080` for Docker)
-- **API Endpoint**: `http://localhost:5000/api/search?query=your+search+terms`
-- **Health Check**: `http://localhost:5000/health`
-
-## Architecture
-
-The application follows clean architecture principles:
-
-```
-├── Controllers/           # API controllers
-├── DTOs/                 # Data transfer objects
-├── Models/               # Domain models
-├── Services/
-│   ├── Interfaces/       # Service contracts
-│   ├── SearchEngines/    # Search engine implementations
-│   └── SearchAggregatorService.cs
-└── Program.cs           # Application startup and configuration
-```
-
-## Search Engines
-
-### Google Search Engine
-- Scrapes Google search results pages
-- Parses result statistics from the results info div
-- Handles various Google result page formats
-
-### Bing Search Engine
-- Scrapes Bing search results pages
-- Extracts hit counts from result statistics
-- Supports multiple Bing result count formats
-
-### DuckDuckGo Search Engine
-- Scrapes DuckDuckGo HTML search results
-- Estimates total results based on visible results
-- Provides conservative hit count estimates
-
-## Configuration
-
-Key configuration options in `appsettings.json`:
-
-```json
-{
-  "SearchEngines": {
-    "RequestTimeout": "00:00:30",
-    "UserAgent": "Mozilla/5.0 ..."
-  }
-}
-```
-
-## Error Handling
-
-- Individual search engine failures don't break the entire request
-- Failed searches are marked with `isSuccess: false` and include error messages
-- The API continues to return results from successful search engines
-- Comprehensive logging helps with debugging issues
-
-## Security Considerations
-
-- Uses proper User-Agent headers to avoid being blocked
-- Implements request timeouts to prevent hanging requests
-- No API keys required (uses public search interfaces)
-- Rate limiting should be implemented for production use
-
-## Future Enhancements
-
-- Add more search engines (Yahoo, Yandex, etc.)
-- Implement caching for frequently searched terms
-- Add rate limiting and request throttling
-- Support for phrase searches (quoted terms)
-- Add search result filtering and sorting options
+- **Swagger UI**: `https://localhost:5001/swagger/index.html`
+- **API Endpoint**: `http://localhost:5001/api/search?query=your+search+terms`
+- **Health Check**: `http://localhost:5001/health`
