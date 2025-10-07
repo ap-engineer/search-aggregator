@@ -4,7 +4,7 @@ interface Props {
     className?: string;
 }
 
-export default function SearchInput({ value, onChange, className = '' }: Props) {
+const SearchInput = ({value, onChange, className = ''}: Props) => {
     return (
         <input
             type="text"
@@ -18,3 +18,5 @@ export default function SearchInput({ value, onChange, className = '' }: Props) 
         />
     );
 }
+
+export default SearchInput;
