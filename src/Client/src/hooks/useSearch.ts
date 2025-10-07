@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { search } from "../api/searchApi";
+import {useState} from "react";
+import {search} from "../api/searchApi";
 import type {SearchResponse} from "../types/search";
 import toast from "react-hot-toast";
 
-export function useSearch() {
+export const useSearch = () => {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<SearchResponse | null>(null);
 
@@ -27,5 +27,5 @@ export function useSearch() {
         }
     };
 
-    return { loading, result, handleSearch };
+    return {loading, result, handleSearch};
 }
