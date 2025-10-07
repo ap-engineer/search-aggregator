@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using SearchAggregator.Api.DTOs;
 using SearchAggregator.Api.Services.Interfaces;
@@ -5,44 +6,85 @@ using SearchAggregator.Api.Services.Interfaces;
 namespace SearchAggregator.Api.Services.Implementation;
 
 /// <summary>
-/// Service that aggregates search results from multiple search engines
+/// Aggregates results across multiple search engines.
+/// Supports multi-word queries and runs engine queries concurrently.
+/// Thread-safe and cancellation-aware.
 /// </summary>
-public sealed class SearchAggregatorService(IEnumerable<ISearchEngine> engines, ILogger<SearchAggregatorService> logger)
-    : ISearchAggregatorService
+public sealed class SearchAggregatorService(
+    IEnumerable<ISearchEngine> engines,
+    ILogger<SearchAggregatorService> logger) : ISearchAggregatorService
 {
     public async Task<SearchResponse> AggregateAsync(string query, CancellationToken ct)
     {
-        var response = new SearchResponse(
-            query: query?.Trim() ?? string.Empty,
-            searchedAt: DateTime.UtcNow
-        );
+        var cleanedQuery = query.Trim();
+        var response = new SearchResponse(query: cleanedQuery, searchedAt: DateTime.UtcNow);
 
-        if (string.IsNullOrWhiteSpace(query))
+        if (string.IsNullOrWhiteSpace(cleanedQuery))
             return response;
 
-        var stopwatch = Stopwatch.StartNew();
+        // Split query into !distinct! word
+        var terms = cleanedQuery
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
-        var tasks = engines.Select(async e =>
+        var stopwatch = Stopwatch.StartNew();
+        // Bag is just more efficient whe order is not important my Microsoft docs
+        var resultsBag = new ConcurrentBag<SearchEngineResult>();
+
+        // One task per engine
+        var engineTasks = engines.Select(async engine =>
         {
+            var totalHits = 0L;
+            var success = true;
+            string? errorMessage = null;
+
             try
             {
-                var hits = await e.GetEstimatedHitsAsync(query, ct);
-                return new SearchEngineResult(e.Name, hits, true, null);
+                // Run all terms concurrently for this engine
+                var termTasks = terms.Select(async term =>
+                {
+                    try
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        return await engine.GetEstimatedHitsAsync(term, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex,
+                            "Error querying {Engine} for term '{Term}'", engine.Name, term);
+                        return 0L;
+                    }
+                });
+
+                var termResults = await Task.WhenAll(termTasks);
+                totalHits = termResults.Sum();
+            }
+            catch (OperationCanceledException)
+            {
+                success = false;
+                errorMessage = "Cancelled";
+                logger.LogInformation("Search cancelled for {Engine}", engine.Name);
             }
             catch (Exception ex)
             {
-                return new SearchEngineResult(e.Name, 0, false, ex.Message);
+                success = false;
+                errorMessage = ex.Message;
+                logger.LogError(ex, "Error querying {Engine}", engine.Name);
             }
+
+            resultsBag.Add(new SearchEngineResult(engine.Name, totalHits, success, errorMessage));
         });
 
-        var engineResults = await Task.WhenAll(tasks);
+        await Task.WhenAll(engineTasks);
         stopwatch.Stop();
 
+        var results = resultsBag.ToArray();
         response.PopulateValues(
-            totalHits: engineResults.Select(eR => eR.TotalHits).Sum(),
-            searchEngines: engineResults,
+            totalHits: results.Sum(r => r.TotalHits),
+            searchEngines: results,
             totalSearchTimeMs: stopwatch.Elapsed.TotalMilliseconds,
-            hasErrors: engineResults.Any(e => !e.IsSuccess)
+            hasErrors: results.Any(r => !r.IsSuccess)
         );
 
         return response;
