@@ -4,12 +4,27 @@ using SearchAggregator.Api.Services.Implementation;
 using SearchAggregator.Api.Services.Interfaces;
 using Serilog;
 
+const string searchPolicies = "APSearchPolicies";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(searchPolicies,
+        corsPolicyBuilder =>
+        {
+            corsPolicyBuilder.SetIsOriginAllowed((host) => true)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials()
+                .WithExposedHeaders("Content-Disposition");
+        });
+});
 
 builder.Host.UseSerilog();
 
@@ -53,6 +68,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors(searchPolicies);
 
 app.MapControllers();
 app.Run();
