@@ -12,16 +12,37 @@ namespace SearchAggregator.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class SearchController(SearchAggregatorService searchAggregatorService) : ControllerBase
+[ProducesResponseType(typeof(SearchResponse), StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status400BadRequest)]
+[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+public class SearchController(SearchAggregatorService searchAggregatorService, ILogger<SearchController> logger)
+    : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] string term, CancellationToken ct)
+    public async Task<IActionResult> Get(
+        [FromQuery,
+         MinLength(1, ErrorMessage = "Query must not be empty"),
+         MaxLength(500, ErrorMessage = "Query must not exceed 500 characters")]
+        string term, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(term))
             return BadRequest("Query parameter 'term' is required.");
 
-        var results = await searchAggregatorService.AggregateAsync(term, ct);
-        return Ok(results);
+        try
+        {
+            var response = await searchAggregatorService.AggregateAsync(term, ct);
+            return Ok(response);
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("Request cancelled for query: {Query}", term);
+            return StatusCode(StatusCodes.Status499ClientClosedRequest, new { error = "Request cancelled." });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during aggregation for query: {Query}", term);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Internal server error." });
+        }
     }
 
     /// <summary>

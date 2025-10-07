@@ -3,23 +3,24 @@ namespace SearchAggregator.Api.DTOs;
 /// <summary>
 /// Response DTO for search operations
 /// </summary>
-public class SearchResponse
+public class SearchResponse(string query, DateTime searchedAt)
 {
-    public string Query { get; set; } = string.Empty;
-    public List<string> SearchTerms { get; set; } = new();
-    public List<SearchEngineResult> SearchEngines { get; set; } = new();
-    public DateTime SearchedAt { get; set; }
-    public double TotalSearchTimeMs { get; set; }
-    public bool HasErrors { get; set; }
-}
+    public string Query { get; init; } = query;
+    public long TotalHits { get; private set; }
+    public IEnumerable<SearchEngineResult> SearchEngines { get; set; } = [];
+    public DateTime SearchedAt { get; private init; } = searchedAt;
+    public double TotalSearchTimeMs { get; private set; }
+    public bool HasErrors { get; private set; }
 
-/// <summary>
-/// Represents search results from a specific search engine
-/// </summary>
-public class SearchEngineResult
-{
-    public string Name { get; set; } = string.Empty;
-    public long TotalHits { get; set; }
-    public bool IsSuccess { get; set; }
-    public string? ErrorMessage { get; set; }
+    public void PopulateValues(
+        long totalHits,
+        IEnumerable<SearchEngineResult> searchEngines,
+        double totalSearchTimeMs,
+        bool hasErrors)
+    {
+        TotalHits = totalHits;
+        SearchEngines = searchEngines;
+        TotalSearchTimeMs = totalSearchTimeMs;
+        HasErrors = hasErrors;
+    }
 }

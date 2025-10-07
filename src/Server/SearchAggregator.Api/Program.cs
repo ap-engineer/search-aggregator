@@ -1,4 +1,4 @@
-using SearchAggregator.Api.Config;
+using SearchAggregator.Api.Options;
 using SearchAggregator.Api.SearchEngines;
 using SearchAggregator.Api.Services.Implementation;
 using SearchAggregator.Api.Services.Interfaces;

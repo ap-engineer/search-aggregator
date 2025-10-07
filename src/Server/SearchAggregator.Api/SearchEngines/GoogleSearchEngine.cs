@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using SearchAggregator.Api.Config;
+using SearchAggregator.Api.Options;
 using SearchAggregator.Api.Services.Interfaces;
 
 namespace SearchAggregator.Api.SearchEngines;
@@ -11,7 +11,7 @@ namespace SearchAggregator.Api.SearchEngines;
 public sealed class GoogleSearchEngine : ISearchEngine
 {
     private readonly HttpClient _http;
-    private readonly SearchEngineOptions.GoogleOptions _cfg;
+    private readonly GoogleOptions _cfg;
 
     public string Name => "Google";
 

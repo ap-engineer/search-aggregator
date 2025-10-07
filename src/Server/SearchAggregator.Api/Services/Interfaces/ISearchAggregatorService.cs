@@ -1,4 +1,4 @@
-using SearchAggregator.Api.Models;
+using SearchAggregator.Api.DTOs;
 
 namespace SearchAggregator.Api.Services.Interfaces;
 
@@ -13,5 +13,5 @@ public interface ISearchAggregatorService
     /// <param name="query">The search query (can contain multiple words)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Aggregated search results</returns>
-    Task<AggregatedSearchResult> SearchAsync(string query, CancellationToken cancellationToken = default);
+    Task<SearchResponse> AggregateAsync(string query, CancellationToken ct = default);
 }
