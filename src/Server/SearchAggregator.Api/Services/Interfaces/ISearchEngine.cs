@@ -16,5 +16,8 @@ public interface ISearchEngine
     /// <param name="searchTerm">The term to search for</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Number of search hits</returns>
-    Task<long> SearchAsync(string searchTerm, CancellationToken cancellationToken = default);
+    Task<long> GetEstimatedHitsAsync(string term, CancellationToken ct);
+
+    // Task<long> SearchAsync(string searchTerm, CancellationToken cancellationToken = default);
 }
+
